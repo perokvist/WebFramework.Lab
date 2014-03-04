@@ -17,8 +17,11 @@ namespace Jayway.WebLab
                 .Use((ctx, next) => ctx.Request.Uri.ToString().Contains("localhost") ? next() : Task.Run(() => ctx.Response.Write("Not Authorized")))
                 .Use((ctx, next) =>
                 {
-                    var routePart = ctx.Request.Uri.Segments.Last().Trim('/').ToLower();
-                    var controllerType = controllers.First(x => x.Name.ToLower().StartsWith(routePart));
+                    var routePart = ctx.Request.Uri.Segments.Last().Trim('/');
+                    if (string.IsNullOrWhiteSpace(routePart))
+                        routePart = "Home";
+
+                    var controllerType = controllers.FirstOrDefault(x => x.Name.ToLower().StartsWith(routePart.ToLower()));
                     return controllerType != null ? ((dynamic)Activator.CreateInstance(controllerType)).Run((dynamic)ctx) : next();
                 })
                 .Run(context => context.Response.WriteAsync("No route found"));
@@ -31,6 +34,14 @@ namespace Jayway.WebLab
             {
                 return context.Response.WriteAsync("Boom!");
             }
+        }
+
+        public class HomeController
+        {
+            public Task Run(IOwinContext context)
+            {
+                return context.Response.WriteAsync("Home");
+            }   
         }
     }
 }
